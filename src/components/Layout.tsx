@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Hotel, User, Star, Building2, LayoutDashboard, Calendar, MessageSquare,
-  Settings, LogOut, Menu, ChevronDown, Shield, Users
+  Settings, LogOut, Menu, ChevronDown, Shield, Users, BookOpen
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -23,6 +23,7 @@ interface NavItem {
 function getNavItems(role: string): NavItem[] {
   const base: NavItem[] = [
     { label: 'Главная', href: '/', icon: <Hotel className="w-4 h-4" /> },
+    { label: 'Лента', href: '/blog', icon: <BookOpen className="w-4 h-4" /> },
   ]
   if (role === 'tourist') {
     return [
@@ -86,6 +87,7 @@ export function Layout({ children }: LayoutProps) {
 
   const navItems = user ? getNavItems(user.role) : [
     { label: 'Главная', href: '/', icon: <Hotel className="w-4 h-4" /> },
+    { label: 'Лента', href: '/blog', icon: <BookOpen className="w-4 h-4" /> },
   ]
 
   const handleSignOut = async () => {
