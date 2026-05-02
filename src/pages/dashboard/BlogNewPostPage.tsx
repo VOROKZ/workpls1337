@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Loader as Loader2, Plus, X, Image as ImageIcon, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,8 +16,12 @@ import { toast } from 'sonner'
 export default function BlogNewPostPage() {
   const { user, influencerProfile } = useAuthStore()
   const navigate = useNavigate()
+  const { id: editId } = useParams<{ id?: string }>()
+  const isEdit = !!editId
+
   const [loading, setLoading] = useState(false)
   const [isDraft, setIsDraft] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(isEdit)
   const [hotels, setHotels] = useState<Pick<HotelProfile, 'id' | 'name' | 'city'>[]>([])
 
   const [title, setTitle] = useState('')
@@ -25,12 +29,13 @@ export default function BlogNewPostPage() {
   const [hotelId, setHotelId] = useState<string>('')
   const [tagInput, setTagInput] = useState('')
   const [tags, setTags] = useState<string[]>([])
-  const [photos, setPhotos] = useState<{ url: string; uploading: boolean; file?: File }[]>([])
+  const [photos, setPhotos] = useState<{ url: string; uploading: boolean }[]>([])
   const [videoUrl, setVideoUrl] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchHotels()
+    if (isEdit) loadPost()
   }, [])
 
   const fetchHotels = async () => {
@@ -40,6 +45,28 @@ export default function BlogNewPostPage() {
       .eq('is_active', true)
       .order('name')
     setHotels(data ?? [])
+  }
+
+  const loadPost = async () => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('id', editId!)
+      .maybeSingle()
+
+    if (error || !data) {
+      toast.error('Пост не найден')
+      navigate(-1)
+      return
+    }
+
+    setTitle(data.title)
+    setContent(data.content)
+    setHotelId(data.hotel_id ?? '')
+    setTags(data.tags ?? [])
+    setPhotos((data.photos ?? []).map((url: string) => ({ url, uploading: false })))
+    setVideoUrl(data.video_url ?? '')
+    setInitialLoading(false)
   }
 
   const addTag = () => {
@@ -59,11 +86,9 @@ export default function BlogNewPostPage() {
     const remaining = 10 - photos.length
     const toUpload = files.slice(0, remaining)
 
-    // Add placeholders
-    const placeholders = toUpload.map(f => ({ url: URL.createObjectURL(f), uploading: true, file: f }))
+    const placeholders = toUpload.map(f => ({ url: URL.createObjectURL(f), uploading: true }))
     setPhotos(prev => [...prev, ...placeholders])
 
-    // Upload each (use the same blobUrl from placeholder)
     for (let i = 0; i < toUpload.length; i++) {
       const file = toUpload[i]
       const blobUrl = placeholders[i].url
@@ -82,7 +107,6 @@ export default function BlogNewPostPage() {
       }
     }
 
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -99,8 +123,7 @@ export default function BlogNewPostPage() {
     setLoading(true)
     setIsDraft(asDraft)
 
-    const { error } = await supabase.from('blog_posts').insert({
-      influencer_id: influencerProfile.id,
+    const payload = {
       title: title.trim(),
       content: content.trim(),
       hotel_id: hotelId || null,
@@ -109,28 +132,48 @@ export default function BlogNewPostPage() {
       video_url: videoUrl.trim() || null,
       is_published: !asDraft,
       status: asDraft ? 'draft' : 'published',
-      likes_count: 0,
-      comments_count: 0,
-    })
+    }
+
+    let error
+    if (isEdit) {
+      ;({ error } = await supabase.from('blog_posts').update(payload).eq('id', editId!))
+    } else {
+      ;({ error } = await supabase.from('blog_posts').insert({
+        ...payload,
+        influencer_id: influencerProfile.id,
+        likes_count: 0,
+        comments_count: 0,
+      }))
+    }
 
     if (error) {
-      toast.error('Ошибка при публикации')
+      toast.error(isEdit ? 'Ошибка при сохранении' : 'Ошибка при публикации')
     } else {
-      toast.success(asDraft ? 'Черновик сохранён' : 'Пост опубликован!')
-      navigate('/dashboard')
+      toast.success(asDraft ? 'Черновик сохранён' : isEdit ? 'Пост обновлён!' : 'Пост опубликован!')
+      navigate(isEdit ? `/dashboard/blog/${editId}` : '/dashboard')
     }
     setLoading(false)
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center gap-3 mb-8">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(isEdit ? `/dashboard/blog/${editId}` : '/dashboard')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Новый пост</h1>
-          <p className="text-sm text-muted-foreground">Поделитесь впечатлениями с аудиторией</p>
+          <h1 className="text-2xl font-bold">{isEdit ? 'Редактировать пост' : 'Новый пост'}</h1>
+          <p className="text-sm text-muted-foreground">
+            {isEdit ? 'Внесите изменения и сохраните' : 'Поделитесь впечатлениями с аудиторией'}
+          </p>
         </div>
       </div>
 
@@ -187,7 +230,6 @@ export default function BlogNewPostPage() {
           </CardContent>
         </Card>
 
-        {/* Photos with upload */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -199,11 +241,7 @@ export default function BlogNewPostPage() {
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {photos.map((photo) => (
                   <div key={photo.url} className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border group">
-                    <img
-                      src={photo.url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={photo.url} alt="" className="w-full h-full object-cover" />
                     {photo.uploading && (
                       <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
                         <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -300,13 +338,13 @@ export default function BlogNewPostPage() {
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Button onClick={() => handleSubmit(false)} disabled={loading} className="flex-1">
             {loading && !isDraft ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            Опубликовать пост
+            {isEdit ? 'Опубликовать' : 'Опубликовать пост'}
           </Button>
           <Button variant="outline" onClick={() => handleSubmit(true)} disabled={loading} className="flex-1 sm:flex-none">
             {loading && isDraft ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             Сохранить черновик
           </Button>
-          <Button variant="ghost" onClick={() => navigate('/dashboard')} disabled={loading}>
+          <Button variant="ghost" onClick={() => navigate(isEdit ? `/dashboard/blog/${editId}` : '/dashboard')} disabled={loading}>
             Отмена
           </Button>
         </div>

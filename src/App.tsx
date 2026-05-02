@@ -238,6 +238,16 @@ export function App() {
           </Layout>
         } />
 
+        <Route path="/dashboard/blog/:id/edit" element={
+          <Layout>
+            <Suspense fallback={<PageLoader />}>
+              <ProtectedRoute allowedRoles={['influencer']}>
+                <BlogNewPostPage />
+              </ProtectedRoute>
+            </Suspense>
+          </Layout>
+        } />
+
         <Route path="/dashboard/blog/:id" element={
           <Layout>
             <Suspense fallback={<PageLoader />}>
