@@ -100,7 +100,7 @@ export default function BlogNewPostPage() {
     setIsDraft(asDraft)
 
     const { error } = await supabase.from('blog_posts').insert({
-      influencer_id: user!.id,
+      influencer_id: influencerProfile.id,
       title: title.trim(),
       content: content.trim(),
       hotel_id: hotelId || null,
