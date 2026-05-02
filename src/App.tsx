@@ -23,6 +23,7 @@ const DashboardRouter = lazy(() => import('@/pages/dashboard/DashboardRouter'))
 const SettingsPage = lazy(() => import('@/pages/dashboard/SettingsPage'))
 const StaffChatPage = lazy(() => import('@/pages/dashboard/StaffChatPage'))
 const BlogNewPostPage = lazy(() => import('@/pages/dashboard/BlogNewPostPage'))
+const BlogPostPage = lazy(() => import('@/pages/dashboard/BlogPostPage'))
 const BookingsPage = lazy(() => import('@/pages/dashboard/BookingsPage'))
 const ChatsPage = lazy(() => import('@/pages/dashboard/ChatsPage'))
 const RoomsManagePage = lazy(() => import('@/pages/dashboard/RoomsManagePage'))
@@ -129,6 +130,14 @@ export function App() {
           </Layout>
         } />
 
+        <Route path="/blog/:id" element={
+          <Layout>
+            <Suspense fallback={<PageLoader />}>
+              <BlogPostPage />
+            </Suspense>
+          </Layout>
+        } />
+
         <Route path="/dashboard" element={
           <Layout>
             <Suspense fallback={<PageLoader />}>
@@ -224,6 +233,16 @@ export function App() {
             <Suspense fallback={<PageLoader />}>
               <ProtectedRoute allowedRoles={['influencer']}>
                 <BlogNewPostPage />
+              </ProtectedRoute>
+            </Suspense>
+          </Layout>
+        } />
+
+        <Route path="/dashboard/blog/:id" element={
+          <Layout>
+            <Suspense fallback={<PageLoader />}>
+              <ProtectedRoute allowedRoles={['influencer']}>
+                <BlogPostPage />
               </ProtectedRoute>
             </Suspense>
           </Layout>

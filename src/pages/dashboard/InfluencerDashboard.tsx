@@ -307,22 +307,24 @@ export default function InfluencerDashboard() {
           ) : (
             <div className="space-y-3">
               {posts.map(post => (
-                <Card key={post.id}>
-                  <CardContent className="p-4 flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="font-medium">{post.title}</div>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{post.content}</p>
-                      <div className="flex gap-3 text-xs text-muted-foreground mt-2">
-                        <span>{post.likes_count} лайков</span>
-                        <span>{post.comments_count} комментариев</span>
-                        <span>{new Date(post.created_at).toLocaleDateString('ru-RU')}</span>
+                <Link key={post.id} to={`/dashboard/blog/${post.id}`}>
+                  <Card className="hover:border-primary/40 hover:bg-muted/30 transition-colors cursor-pointer">
+                    <CardContent className="p-4 flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{post.title}</div>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{post.content}</p>
+                        <div className="flex gap-3 text-xs text-muted-foreground mt-2">
+                          <span>{post.likes_count} лайков</span>
+                          <span>{post.comments_count} комментариев</span>
+                          <span>{new Date(post.created_at).toLocaleDateString('ru-RU')}</span>
+                        </div>
                       </div>
-                    </div>
-                    <Badge variant={post.status === 'published' ? 'default' : 'secondary'} className="text-xs shrink-0">
-                      {post.status === 'published' ? 'Опубликован' : 'Черновик'}
-                    </Badge>
-                  </CardContent>
-                </Card>
+                      <Badge variant={post.status === 'published' ? 'default' : 'secondary'} className="text-xs shrink-0">
+                        {post.status === 'published' ? 'Опубликован' : 'Черновик'}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}

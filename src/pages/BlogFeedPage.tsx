@@ -139,7 +139,9 @@ export default function BlogFeedPage() {
 
                   {/* Post content */}
                   <div className="px-4 pb-3">
-                    <h2 className="font-semibold mb-2">{post.title}</h2>
+                    <Link to={`/blog/${post.id}`} className="hover:underline">
+                      <h2 className="font-semibold mb-2">{post.title}</h2>
+                    </Link>
                     {post.hotel_profiles && (
                       <div className="flex items-center gap-1 text-xs text-primary mb-2">
                         <Building2 className="w-3 h-3" /> {post.hotel_profiles.name}
