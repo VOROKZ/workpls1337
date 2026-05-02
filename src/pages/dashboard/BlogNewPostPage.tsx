@@ -63,12 +63,13 @@ export default function BlogNewPostPage() {
     const placeholders = toUpload.map(f => ({ url: URL.createObjectURL(f), uploading: true, file: f }))
     setPhotos(prev => [...prev, ...placeholders])
 
-    // Upload each
-    for (const file of toUpload) {
+    // Upload each (use the same blobUrl from placeholder)
+    for (let i = 0; i < toUpload.length; i++) {
+      const file = toUpload[i]
+      const blobUrl = placeholders[i].url
       const ext = file.name.split('.').pop()
       const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
       const { data, error } = await supabase.storage.from('blog-images').upload(path, file)
-      const blobUrl = URL.createObjectURL(file)
 
       if (error) {
         setPhotos(prev => prev.filter(p => p.url !== blobUrl))
@@ -170,12 +171,12 @@ export default function BlogNewPostPage() {
             <CardTitle className="text-base">Связанный отель (опционально)</CardTitle>
           </CardHeader>
           <CardContent>
-            <Select value={hotelId} onValueChange={setHotelId}>
+            <Select value={hotelId || 'none'} onValueChange={v => setHotelId(v === 'none' ? '' : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Выберите отель, если пост о нём" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Без привязки к отелю</SelectItem>
+                <SelectItem value="none">Без привязки к отелю</SelectItem>
                 {hotels.map(h => (
                   <SelectItem key={h.id} value={h.id}>
                     {h.name} — {h.city}
